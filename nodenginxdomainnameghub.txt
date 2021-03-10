@@ -1,0 +1,91 @@
+# Task: To deploy Node.js aapplication and Nginx on Google cloud compute engine instance and pointb a domain name to the Ip address.
+
+# Procedure
+
+# Step 1:Create a GCP compute engine instance
+# Create a GCP compute engine instance using Ubuntu 18.04 LTS
+# SSH into the instance
+
+# Step2: Install Nginx
+# to Install Nginx, first, check for updates and upgrade by running the command:
+"sudo apt-get updates"
+"sudo apt-get upgrade -y"
+
+# Install Nginx by running the command:
+"sudo apt-get install nginx"
+# If you did not select allow HTTP and HTTPS during instance creation, then adjust the firewall rulles to allow HTTP and HTTPS traffic by running the command:
+"sudo apt-get install ufw"
+"sudo ufw allow 'nginx HTTP'"
+# to check the status of the installed nginx run the command:
+"systemctl status nginx"
+# (If you copy the IP address to a browser you will see welcome to Nginx)
+
+# Step 3: Install Node.js still through SSH
+# first, install npm (node package manager)
+" sudo apt-get install npm "
+" sudo npm cache clean -f " 
+" sudo npm install -g n "
+" sudo n stable "
+
+# Step 4: Give the web folder for the node.js app the right permissions
+# To give the the /var/www folder the right permissions, run the command:
+" sudo chmod -R 756 /var/www " or " sudo chmod -R +x /var/www "
+# To change the ownership, run the command:
+" sudo chown -R www-data:www-data /var/www
+"sudo usermod -a -G www-data (ulomaocheoha) "
+# Restart the server by running the command:
+"sudo reboot "
+# To access the web folder /var/www that was given permissions above, cd into it:
+" cd /var/www "
+# Create a directory called index by running the the comand:
+"mkdir index "
+# Chande into the index directory:
+ " cd index "
+ # Open nano editor to write a simple node.js code that will be displayed in the browser:
+ " sudo nano index.js "
+ # Put the code below into the nano editor save and close.
+
+ #!/usr/bin/env nodejs
+var http = require('http');
+http.createServer(function (req, res) {
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Hello World, this is my first node app\n');
+}).listen(8080, 'localhost');
+console.log('Server running at http://localhost:8080/'); 
+
+# Step 5: install pm2
+# pm2 will initialize the node application, run the command:
+" sudo npm install -g pm2 "
+# Run the command " ls " to see the index.js  
+# To start the node app, run the command:
+" pm2 start index.js --name index "
+# To check the status: run the command:
+" pm2 status "
+# To make sure node starts if the system reboots, run the command:
+" pm2 startup systemd "
+
+# Step 6: change Nginx configuration settings
+# Open the Nginx config file by running the command:
+" sudo nano /etc/nginx/sites-available/default
+# when open go to server setting just before location settings and input your domain or sub domain name  were there is server name.
+# Go to location settings and comment out the last line and also add the following codes just before the closing surly bracket:
+
+proxy_pass http://localhost:8080;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection 'upgrade';
+  proxy_set_header Host $host;
+  proxy_cache_bypass $http_upgrade;
+
+# (these codes will pass any request through Nginx to the node app.)
+# Save the Nginx changed configuration and exit
+
+# restart nginx by running the command:
+" sudo systemctl restart nginx "
+# at this point if you visit the instance ip address, you will see the node application is deployed. 
+
+# Step 6:Map your instance Ip address to your domain name inputed into the nginx config file.
+# Go to Google cloud console> Network services> Google DNS and click create zone. create a DNS zone and put in the instance ip adress in the ipv4 A records and put in your domain name in the server name.
+# Go to your domain name provider (eg namecheap) and create an A record and put in the Ip adress.
+
+#At this point if you search your domain name in a browser, you will see the node applicationup and running
